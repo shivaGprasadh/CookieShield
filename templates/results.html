@@ -173,6 +173,7 @@
                                 <th>Value</th>
                                 <th>Domain</th>
                                 <th>Type</th>
+                                <th>Persistence</th>
                                 <th>Security</th>
                                 <th>SameSite</th>
                                 <th>Expires</th>
@@ -197,6 +198,11 @@
                                 <td>
                                     <span class="badge bg-{{ 'warning' if cookie.type == 'Third-party' else 'info' }}">
                                         {{ cookie.type }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'primary' if cookie.persistence == 'Session' else 'secondary' }}">
+                                        {{ cookie.persistence }}
                                     </span>
                                 </td>
                                 <td>

@@ -21,29 +21,29 @@ def index():
 def analyze():
     """Analyze cookies for the submitted URL"""
     url = request.form.get('url', '').strip()
-    
+
     if not url:
         flash('Please enter a valid URL', 'error')
         return redirect(url_for('index'))
-    
+
     # Add protocol if missing
     if not url.startswith(('http://', 'https://')):
         url = 'https://' + url
-    
+
     try:
         analyzer = CookieAnalyzer()
         results = analyzer.analyze_website(url)
-        
+
         if not results['success']:
             flash(f'Error analyzing website: {results["error"]}', 'error')
             return redirect(url_for('index'))
-        
+
         return render_template('results.html', 
                              url=url, 
                              cookies=results['cookies'],
                              summary=results['summary'],
                              recommendations=results['recommendations'])
-    
+
     except Exception as e:
         logging.error(f"Error analyzing {url}: {str(e)}")
         flash(f'An error occurred while analyzing the website: {str(e)}', 'error')
@@ -55,22 +55,22 @@ def export_csv(url):
     try:
         analyzer = CookieAnalyzer()
         results = analyzer.analyze_website(url)
-        
+
         if not results['success']:
             flash('Unable to export - analysis failed', 'error')
             return redirect(url_for('index'))
-        
+
         # Create CSV content
         output = io.StringIO()
         writer = csv.writer(output)
-        
+
         # Write header
         writer.writerow([
             'Cookie Name', 'Domain', 'Path', 'Value', 'SameSite', 
             'Secure', 'HttpOnly', 'Expires', 'Size', 'Type', 
-            'Risk Level', 'Recommendations'
+            'Persistence', 'Classification', 'Risk Level', 'Recommendations'
         ])
-        
+
         # Write cookie data
         for cookie in results['cookies']:
             writer.writerow([
@@ -84,17 +84,19 @@ def export_csv(url):
                 cookie['expires'],
                 cookie['size'],
                 cookie['type'],
+                cookie['persistence'],
+                cookie['classification'],
                 cookie['risk_level'],
                 '; '.join(cookie['recommendations'])
             ])
-        
+
         # Create response
         response = make_response(output.getvalue())
         response.headers['Content-Type'] = 'text/csv'
         response.headers['Content-Disposition'] = f'attachment; filename=cookie_analysis_{url.replace("://", "_").replace("/", "_")}.csv'
-        
+
         return response
-    
+
     except Exception as e:
         logging.error(f"Error exporting CSV for {url}: {str(e)}")
         flash('Error exporting results', 'error')
