@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie Analysis Results - {{ url }}</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/custom.css') }}" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-shield-alt me-2"></i>
+                Cookie Security Analyzer
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="btn btn-outline-light" href="{{ url_for('index') }}">
+                    <i class="fas fa-plus me-2"></i>New Analysis
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2>Cookie Analysis Results</h2>
+                        <p class="text-muted mb-0">
+                            <i class="fas fa-globe me-2"></i>{{ url }}
+                        </p>
+                    </div>
+                    <a href="{{ url_for('export_csv', url=url) }}" class="btn btn-success">
+                        <i class="fas fa-download me-2"></i>Export CSV
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="card-title text-primary">{{ summary.total }}</h3>
+                        <p class="card-text">Total Cookies</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="card-title text-success">{{ summary.secure }}</h3>
+                        <p class="card-text">Secure Cookies</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="card-title text-warning">{{ summary.third_party }}</h3>
+                        <p class="card-text">Third-party</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="card-title text-danger">{{ summary.high_risk }}</h3>
+                        <p class="card-text">High Risk</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Risk Summary -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-pie me-2"></i>Cookie Types
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted">First-party:</small>
+                                <div class="fw-bold">{{ summary.first_party }}</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Session:</small>
+                                <div class="fw-bold">{{ summary.session }}</div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-6">
+                                <small class="text-muted">Third-party:</small>
+                                <div class="fw-bold">{{ summary.third_party }}</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Persistent:</small>
+                                <div class="fw-bold">{{ summary.persistent }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Risk Levels
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-4 text-center">
+                                <div class="text-danger fw-bold fs-5">{{ summary.high_risk }}</div>
+                                <small class="text-muted">High</small>
+                            </div>
+                            <div class="col-4 text-center">
+                                <div class="text-warning fw-bold fs-5">{{ summary.medium_risk }}</div>
+                                <small class="text-muted">Medium</small>
+                            </div>
+                            <div class="col-4 text-center">
+                                <div class="text-success fw-bold fs-5">{{ summary.low_risk }}</div>
+                                <small class="text-muted">Low</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations -->
+        {% if recommendations %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>Security Recommendations
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    {% for recommendation in recommendations %}
+                        <li class="mb-2">
+                            <i class="fas fa-arrow-right text-primary me-2"></i>{{ recommendation }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Cookie Details Table -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-table me-2"></i>Cookie Details
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Name</th>
+                                <th>Domain</th>
+                                <th>Type</th>
+                                <th>Security</th>
+                                <th>Expires</th>
+                                <th>Risk</th>
+                                <th>Recommendations</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cookie in cookies %}
+                            <tr>
+                                <td>
+                                    <code class="text-break">{{ cookie.name }}</code>
+                                </td>
+                                <td>
+                                    <small>{{ cookie.domain }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'warning' if cookie.type == 'Third-party' else 'info' }}">
+                                        {{ cookie.type }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        {% if cookie.secure %}
+                                            <span class="badge bg-success">Secure</span>
+                                        {% endif %}
+                                        {% if cookie.httpOnly %}
+                                            <span class="badge bg-success">HttpOnly</span>
+                                        {% endif %}
+                                        {% if cookie.sameSite and cookie.sameSite != 'None' %}
+                                            <span class="badge bg-info">{{ cookie.sameSite }}</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <small>{{ cookie.expires }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'danger' if cookie.risk_level == 'High' else ('warning' if cookie.risk_level == 'Medium' else 'success') }}">
+                                        {{ cookie.risk_level }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="recommendations-cell">
+                                        {% for rec in cookie.recommendations %}
+                                            <small class="d-block text-muted">• {{ rec }}</small>
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {% if not cookies %}
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-cookie-bite fa-3x text-muted mb-3"></i>
+                <h4>No Cookies Found</h4>
+                <p class="text-muted">This website doesn't appear to set any cookies.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <footer class="mt-5 py-4 bg-dark">
+        <div class="container text-center">
+            <small class="text-muted">
+                Analysis completed
+            </small>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
