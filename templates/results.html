@@ -170,9 +170,11 @@
                         <thead class="table-dark">
                             <tr>
                                 <th>Name</th>
+                                <th>Value</th>
                                 <th>Domain</th>
                                 <th>Type</th>
                                 <th>Security</th>
+                                <th>SameSite</th>
                                 <th>Expires</th>
                                 <th>Risk</th>
                                 <th>Recommendations</th>
@@ -183,6 +185,11 @@
                             <tr>
                                 <td>
                                     <code class="text-break">{{ cookie.name }}</code>
+                                </td>
+                                <td>
+                                    <small class="text-break" style="max-width: 300px; display: inline-block; word-wrap: break-word;">
+                                        {{ cookie.value }}
+                                    </small>
                                 </td>
                                 <td>
                                     <small>{{ cookie.domain }}</small>
@@ -200,10 +207,12 @@
                                         {% if cookie.httpOnly %}
                                             <span class="badge bg-success">HttpOnly</span>
                                         {% endif %}
-                                        {% if cookie.sameSite and cookie.sameSite != 'None' %}
-                                            <span class="badge bg-info">{{ cookie.sameSite }}</span>
-                                        {% endif %}
                                     </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if cookie.sameSite in ['Strict', 'Lax'] else 'warning' }}">
+                                        {{ cookie.sameSite if cookie.sameSite else 'None' }}
+                                    </span>
                                 </td>
                                 <td>
                                     <small>{{ cookie.expires }}</small>

@@ -63,7 +63,16 @@ class CookieAnalyzer:
                         '--no-first-run',
                         '--disable-background-timer-throttling',
                         '--disable-renderer-backgrounding',
-                        '--disable-backgrounding-occluded-windows'
+                        '--disable-backgrounding-occluded-windows',
+                        '--disable-blink-features=AutomationControlled',
+                        '--disable-extensions',
+                        '--disable-plugins',
+                        '--disable-default-apps',
+                        '--disable-sync',
+                        '--no-default-browser-check',
+                        '--disable-client-side-phishing-detection',
+                        '--disable-component-extensions-with-background-pages',
+                        '--enable-automation'
                     ]
                 }
                 
@@ -72,8 +81,26 @@ class CookieAnalyzer:
                     self.logger.debug(f"Using browser at: {self.browser_path}")
                 
                 browser = await p.chromium.launch(**launch_options)
-                context = await browser.new_context()
+                
+                # Create context with realistic user agent and settings
+                context = await browser.new_context(
+                    user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    viewport={'width': 1920, 'height': 1080},
+                    locale='en-US',
+                    timezone_id='America/New_York'
+                )
+                
                 page = await context.new_page()
+                
+                # Enable JavaScript and set up request interception to capture more cookies
+                await page.set_extra_http_headers({
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.5',
+                    'Accept-Encoding': 'gzip, deflate',
+                    'DNT': '1',
+                    'Connection': 'keep-alive',
+                    'Upgrade-Insecure-Requests': '1'
+                })
                 
                 # Navigate to the website with shorter timeout and fallback
                 try:
@@ -91,11 +118,67 @@ class CookieAnalyzer:
                         'recommendations': []
                     }
                 
-                # Wait a bit more for dynamic content and cookies to load
+                # Wait for network to be idle to ensure all requests complete
+                try:
+                    await page.wait_for_load_state('networkidle', timeout=10000)
+                except:
+                    pass  # Continue even if networkidle times out
+                
+                # Wait additional time for dynamic content and cookies to load
+                await page.wait_for_timeout(3000)
+                
+                # Scroll down to trigger any lazy-loaded content that might set cookies
+                try:
+                    await page.evaluate('''
+                        window.scrollTo(0, document.body.scrollHeight);
+                    ''')
+                    await page.wait_for_timeout(1000)
+                    
+                    # Scroll back to top
+                    await page.evaluate('window.scrollTo(0, 0);')
+                    await page.wait_for_timeout(1000)
+                except:
+                    pass
+                
+                # Try to interact with common elements that might trigger cookie setting
+                try:
+                    # Look for and click cookie consent buttons
+                    consent_selectors = [
+                        'button[id*="accept"]', 'button[class*="accept"]',
+                        'button[id*="consent"]', 'button[class*="consent"]',
+                        'button[id*="agree"]', 'button[class*="agree"]',
+                        'button[id*="cookie"]', 'button[class*="cookie"]',
+                        'a[id*="accept"]', 'a[class*="accept"]'
+                    ]
+                    
+                    for selector in consent_selectors:
+                        try:
+                            button = await page.query_selector(selector)
+                            if button:
+                                await button.click()
+                                await page.wait_for_timeout(1000)
+                                break
+                        except:
+                            continue
+                except:
+                    pass
+                
+                # Wait for any additional cookies that might be set after interactions
                 await page.wait_for_timeout(2000)
                 
-                # Get cookies
-                cookies = await context.cookies()
+                # Get cookies and deduplicate them properly
+                await page.wait_for_timeout(1000)
+                all_cookies_raw = await context.cookies()
+                
+                # Deduplicate cookies based on name, domain, and path
+                seen_cookies = set()
+                cookies = []
+                
+                for cookie in all_cookies_raw:
+                    cookie_key = (cookie.get('name', ''), cookie.get('domain', ''), cookie.get('path', '/'))
+                    if cookie_key not in seen_cookies:
+                        seen_cookies.add(cookie_key)
+                        cookies.append(cookie)
                 
                 # Analyze cookies
                 analyzed_cookies = []
